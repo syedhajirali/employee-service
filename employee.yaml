@@ -23,17 +23,17 @@ spec:
         - name: MYSQL_DATABASE
           valueFrom:
             configMapKeyRef:
-              name: mysql
+              name: mysql-service
               key: database-name
         - name: MYSQL_USERNAME
           valueFrom:
             secretKeyRef:
-              name: mysql
+              name: mysql-service
               key: database-user
         - name: MYSQL_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mysql
+              name: mysql-service
               key: database-password
 
 ---
@@ -41,7 +41,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mysql
+  name: mysql-service
   labels:
     app: mysql-service
 spec:
