@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: employee1
+  labels:
+    app: employee1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: employee1
+  template:
+    metadata:
+      labels:
+        app: employee1
+    spec:
+      containers:
+      - name: employee
+        image: 10.128.0.17:5000/syedhajirali/employee:${BUILD_NUMBER}   
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: mysql
+              key: database-name
+        - name: MYSQL_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql
+              key: database-user
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql
+              key: database-password
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:latest
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: mysql
+              key: database-name
+        - name: MYSQL_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql
+              key: database-user
+        - name: MYSQL_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql
+              key: database-password      
+      
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: employee1
+  name: employee1
+  namespace: default
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: employee1
+  sessionAffinity: None
+  type: NodePort
+  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: backend
+  name: backend
+  namespace: default
+spec:
+  ports:
+  - port: 3306
+    protocol: TCP
+    targetPort: 3306
+  selector:
+    run: mysql
+  sessionAffinity: None
+  type: ClusterIP
+  
+---
+ 
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql
+data:
+  rootPassword: cGFzc3dvcmQ=
+  database-user: ZGJ1c2Vy
+  database-password: ZGJwYXNz
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql
+data:
+  database-name: microservices  
+  
