@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: employee1
+  name: employee-service
   labels:
-    app: employee1
+    app: employee-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: employee1
+      app: employee-service
   template:
     metadata:
       labels:
-        app: employee1
+        app: employee-service
     spec:
       containers:
       - name: employee
-        image: 10.128.0.17:5000/syedhajirali/employee:${BUILD_NUMBER}   
+        image: 10.128.0.17:5000/syedhajirali/employee-service:${BUILD_NUMBER}   
         ports:
         - containerPort: 8080
         env:
@@ -43,19 +43,19 @@ kind: Deployment
 metadata:
   name: mysql
   labels:
-    app: mysql
+    app: mysql-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mysql
+      app: mysql-service
   template:
     metadata:
       labels:
-        app: mysql
+        app: mysql-service
     spec:
       containers:
-      - name: mysql
+      - name: mysql-service
         image: mysql:latest
         ports:
         - containerPort: 3306
@@ -63,17 +63,17 @@ spec:
         - name: MYSQL_DATABASE
           valueFrom:
             configMapKeyRef:
-              name: mysql
+              name: mysql-service
               key: database-name
         - name: MYSQL_INITDB_ROOT_USERNAME
           valueFrom:
             secretKeyRef:
-              name: mysql
+              name: mysql-service
               key: database-user
         - name: MYSQL_INITDB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mysql
+              name: mysql-service
               key: database-password      
       
 ---
@@ -81,8 +81,8 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: employee1
-  name: employee1
+    app: employee-service
+  name: employee-service
   namespace: default
 spec:
   ports:
@@ -90,7 +90,7 @@ spec:
     protocol: TCP
     targetPort: 8080
   selector:
-    app: employee1
+    app: employee-service
   sessionAffinity: None
   type: NodePort
   
@@ -108,7 +108,7 @@ spec:
     protocol: TCP
     targetPort: 3306
   selector:
-    run: mysql
+    run: mysql-service
   sessionAffinity: None
   type: ClusterIP
   
@@ -117,7 +117,7 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: mysql
+  name: mysql-service
 data:
   rootPassword: cGFzc3dvcmQ=
   database-user: ZGJ1c2Vy
@@ -126,7 +126,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: mysql
+  name: mysql-service
 data:
   database-name: microservices  
   
