@@ -1,3 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-db-name
+data:
+  mysqldb.properties: |
+    mysql.dbname=sampledb
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+type: Opaque
+data:
+  username.properties: bXlzcWwudXNlcj1teXNxbAo=
+  password.properties: bXlzcWwucGFzc3dvcmQ9cGFzc3dvcmQK
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,119 +31,37 @@ spec:
       labels:
         app: employee-service
     spec:
+      volumes:
+      - name: mysqlcm
+        configMap:
+          name: mysql-db-name
+      - name: mysqlse
+        secret:
+          secretName: mysql-secret
       containers:
-      - name: employee
-        image: 10.128.0.17:5000/syedhajirali/employee-service:${BUILD_NUMBER}   
+      - name: po-service
+        image: 10.128.0.17:5000/syedhajirali/employee-service:${BUILD_NUMBER}  
         ports:
         - containerPort: 8080
-        env:
-        - name: MYSQL_DATABASE
-          valueFrom:
-            configMapKeyRef:
-              name: mysql-service
-              key: database-name
-        - name: MYSQL_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: mysql-service
-              key: database-user
-        - name: MYSQL_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql-service
-              key: database-password
-
+          protocol: TCP
+        volumeMounts:
+        - name: mysqlcm
+          mountPath: /etc/config
+        - name: mysqlse
+          mountPath: /etc/vol-secrets
+      imagePullSecrets:
+      - name: acr-registry
 ---
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: mysql-service
-  labels:
-    app: mysql-service
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: mysql-service
-  template:
-    metadata:
-      labels:
-        app: mysql-service
-    spec:
-      containers:
-      - name: mysql-service
-        image: mysql:latest
-        ports:
-        - containerPort: 3306
-        env:
-        - name: MYSQL_DATABASE
-          valueFrom:
-            configMapKeyRef:
-              name: mysql-service
-              key: database-name
-        - name: MYSQL_INITDB_ROOT_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: mysql-service
-              key: database-user
-        - name: MYSQL_INITDB_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql-service
-              key: database-password      
-      
----
-apiVersion: v1
 kind: Service
+apiVersion: v1
 metadata:
-  labels:
-    app: employee-service
-  name: employee-service
-  namespace: default
+  name: po-service
 spec:
+  type: LoadBalancer
+  selector:
+    app: po-service
   ports:
-  - port: 8080
+  - name: 80-tcp
     protocol: TCP
+    port: 80
     targetPort: 8080
-  selector:
-    app: employee-service
-  sessionAffinity: None
-  type: NodePort
-  
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: backend
-  name: backend
-  namespace: default
-spec:
-  ports:
-  - port: 3306
-    protocol: TCP
-    targetPort: 3306
-  selector:
-    run: mysql-service
-  sessionAffinity: None
-  type: ClusterIP
-  
----
- 
-apiVersion: v1
-kind: Secret
-metadata:
-  name: mysql-service
-data:
-  rootPassword: cGFzc3dvcmQ=
-  database-user: ZGJ1c2Vy
-  database-password: ZGJwYXNz
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: mysql-service
-data:
-  database-name: microservices  
-  
