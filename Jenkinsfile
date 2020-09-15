@@ -1,14 +1,14 @@
 pipeline {
   environment {
-    registry = "10.128.0.17:5000/syedhajirali/employee"
-    registry_mysql = "10.128.0.17:5000/syedhajirali/mysql"
+    registry = "10.128.0.17:5000/syedhajirali/employee-service"
+   
      dockerImage = ''
   }
   agent any
   stages {
     stage('Cloning Git') {
       steps {
-       git 'https://github.com/syedhajirali/employee.git'
+       git 'https://github.com/syedhajirali/employee-service.git'
       }
     }
     stage('Building image') {
@@ -28,19 +28,7 @@ pipeline {
       }
     }
    
-    stage('current') {
-      steps{
-        dir("${env.WORKSPACE}/mysql"){
-          sh "pwd"
-          }
-      }
-   }
-   stage('Build mysql image') {
-     steps{
-        sh 'docker build -t "10.128.0.17:5000/syedhajirali/mysql:$BUILD_NUMBER"  "$WORKSPACE"/mysql'
-        sh 'docker push "10.128.0.17:5000/syedhajirali/mysql:$BUILD_NUMBER"'
-        }
-      }
+  
     stage('Deploy App to Kubernetes Cluster') {
       steps {
         script {
